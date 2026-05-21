@@ -4,41 +4,47 @@ import { supabase } from './lib/supabaseClient'
 function App() {
   const [tamaño, setTamaño] = useState(80)
   const [letra, setLetra] = useState('E')
-  const [resultados, setResultados] = useState([])
+  const [resultados, setResultados] = useState<any[]>([])
   const [ojo, setOjo] = useState('derecho')
-  const [pacienteId, setPacienteId] = useState(null)
-  const [consultorioId, setConsultorioId] = useState(null)
+  const [pacienteId, setPacienteId] = useState<string | null>(null)
+  const [consultorioId, setConsultorioId] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
-  
+  const [listaPacientes, setListaPacientes] = useState<any[]>([])
+  const [cargandoPacientes, setCargandoPacientes] = useState(true)
+
   const letras = ['E', 'F', 'P', 'T', 'O', 'Z', 'L', 'D', 'C', 'H']
   const tamaños = [80, 70, 60, 50, 40, 30, 25, 20, 15, 10]
-  
-  // Cargar datos iniciales de Supabase
+
+  // Cargar pacientes
   useEffect(() => {
-    const cargarDatosIniciales = async () => {
-      // IMPORTANTE: Reemplazar con el ID real de tu consultorio
+    const cargarDatos = async () => {
       const CONSULTORIO_FIJO = '6019ee21-1ce9-4030-b776-b93c67ff358a'
       setConsultorioId(CONSULTORIO_FIJO)
       
-      // Cargar el primer paciente (después mejorás con un selector)
-      const { data } = await supabase
-        .from('pacientes')
-        .select('id, nombre')
-        .eq('consultorio_id', CONSULTORIO_FIJO)
-        .limit(1)
+      setCargandoPacientes(true)
       
-      if (data && data.length > 0) {
+      const { data, error } = await supabase
+        .from('pacientes')  // ← CAMBIADO: sin oftalmologia.
+        .select('id, nombre, dni')
+        .eq('consultorio_id', CONSULTORIO_FIJO)
+        .order('nombre')
+      
+      if (error) {
+        console.error('Error cargando pacientes:', error)
+      } else if (data && data.length > 0) {
+        setListaPacientes(data)
         setPacienteId(data[0].id)
-        console.log('Paciente cargado:', data[0].nombre)
+        console.log('Pacientes cargados:', data.length)
       } else {
-        console.log('No hay pacientes. Creá uno en Supabase primero')
+        console.log('No hay pacientes. Creá uno en Supabase')
       }
+      setCargandoPacientes(false)
     }
     
-    cargarDatosIniciales()
+    cargarDatos()
   }, [])
-  
-  // Guardar prueba completa en Supabase
+
+  // Guardar prueba
   const guardarPruebaEnSupabase = async () => {
     if (!pacienteId || !consultorioId) {
       alert('Falta paciente o consultorio. No se puede guardar.')
@@ -53,7 +59,7 @@ function App() {
     setGuardando(true)
     
     const { data, error } = await supabase
-      .from('pruebas')
+      .from('pruebas')  // ← CAMBIADO: sin oftalmologia.
       .insert({
         consultorio_id: consultorioId,
         paciente_id: pacienteId,
@@ -72,12 +78,13 @@ function App() {
       alert('Error al guardar en Supabase: ' + error.message)
     } else {
       console.log('Guardado exitoso:', data)
-      alert('✅ Prueba guardada correctamente en Supabase')
+      const pacienteNombre = listaPacientes.find(p => p.id === pacienteId)?.nombre || 'Desconocido'
+      alert(`✅ Prueba guardada correctamente para: ${pacienteNombre}`)
     }
     
     setGuardando(false)
   }
-  
+
   const letraCorrecta = () => {
     const nuevosResultados = [...resultados, { 
       ojo: ojo, 
@@ -94,14 +101,13 @@ function App() {
     }
     setLetra(letras[Math.floor(Math.random() * letras.length)])
     
-    // Si llegó al tamaño más chico, guardar automáticamente
     if (idxActual === tamaños.length - 1) {
       setTimeout(() => {
         guardarPruebaEnSupabase()
       }, 500)
     }
   }
-  
+
   const letraIncorrecta = () => {
     const nuevosResultados = [...resultados, { 
       ojo: ojo, 
@@ -113,9 +119,8 @@ function App() {
     setResultados(nuevosResultados)
     setLetra(letras[Math.floor(Math.random() * letras.length)])
   }
-  
-  const cambiarOjo = (nuevoOjo) => {
-    // Guardar automáticamente al cambiar de ojo si hay resultados
+
+  const cambiarOjo = (nuevoOjo: string) => {
     if (resultados.length > 0) {
       guardarPruebaEnSupabase()
     }
@@ -124,10 +129,10 @@ function App() {
     setTamaño(80)
     setLetra('E')
   }
-  
-  // Efecto para teclas rápidas (A=Correcta, S=Incorrecta, F=Cambiar ojo)
+
+  // Teclado
   useEffect(() => {
-    const manejarTecla = (event) => {
+    const manejarTecla = (event: KeyboardEvent) => {
       if (event.key === 'a' || event.key === 'A') {
         letraCorrecta()
       } else if (event.key === 's' || event.key === 'S') {
@@ -140,13 +145,45 @@ function App() {
     window.addEventListener('keydown', manejarTecla)
     return () => window.removeEventListener('keydown', manejarTecla)
   }, [letraCorrecta, letraIncorrecta, cambiarOjo, ojo])
-  
+
   return (
     <div style={{ textAlign: 'center', padding: '20px' }}>
-      <h1>Test Oftalmológico</h1>
-      
-      {guardando && <p style={{ color: 'blue', fontWeight: 'bold' }}>💾 Guardando en Supabase...</p>}
-      
+      <h1>Test Oftalmológico 👁️</h1>
+
+      {/* Selector de paciente */}
+      <div style={{ 
+        marginBottom: '20px', 
+        padding: '15px', 
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px',
+        border: '1px solid #ddd'
+      }}>
+        <label style={{ fontWeight: 'bold', marginRight: '10px' }}>
+          👤 Paciente:
+        </label>
+        <select 
+          value={pacienteId || ''}
+          onChange={(e) => setPacienteId(e.target.value)}
+          style={{ padding: '8px', fontSize: '16px', minWidth: '200px' }}
+          disabled={cargandoPacientes}
+        >
+          <option value="">-- Seleccionar paciente --</option>
+          {listaPacientes.map(pac => (
+            <option key={pac.id} value={pac.id}>
+              {pac.nombre} {pac.dni ? `(${pac.dni})` : ''}
+            </option>
+          ))}
+        </select>
+        {cargandoPacientes && <span style={{ marginLeft: '10px' }}>⏳ Cargando...</span>}
+        {!cargandoPacientes && listaPacientes.length === 0 && (
+          <span style={{ marginLeft: '10px', color: 'red' }}>
+            ⚠️ No hay pacientes. Creá uno en Supabase.
+          </span>
+        )}
+      </div>
+
+      {guardando && <p style={{ color: 'blue', fontWeight: 'bold' }}>💾 Guardando...</p>}
+
       <div>
         <button onClick={() => cambiarOjo('derecho')} style={estiloBoton(ojo === 'derecho')}>
           Ojo Derecho 👁️
@@ -184,7 +221,7 @@ function App() {
             cursor: 'pointer'
           }}
         >
-          💾 Guardar Manualmente en Supabase
+          💾 Guardar Manualmente
         </button>
       </div>
       
@@ -198,7 +235,7 @@ function App() {
             </li>
           ))}
         </ul>
-        {resultados.length === 0 && <p>Todavía no hay resultados. Hacé clic en los botones verde o rojo.</p>}
+        {resultados.length === 0 && <p>Todavía no hay resultados. Hacé clic en los botones.</p>}
         <p style={{ fontSize: '12px', color: '#666', marginTop: '20px' }}>
           💡 Atajo de teclado: <strong>A</strong> = Leyó Bien | <strong>S</strong> = Leyó Mal | <strong>F</strong> = Cambiar Ojo
         </p>
@@ -207,7 +244,7 @@ function App() {
   )
 }
 
-const estiloBoton = (activo) => ({
+const estiloBoton = (activo: boolean) => ({
   padding: '10px 20px',
   margin: '10px',
   backgroundColor: activo ? '#007bff' : '#ccc',
