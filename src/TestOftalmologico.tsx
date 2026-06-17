@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabaseClient'
 import { NuevoPacienteModal } from './components/NuevoPacienteModal'
+import { HistorialPruebas } from './components/HistorialPruebas'
 
 export default function TestOftalmologico({ consultorioId }: { consultorioId: string }) {
   const [tamaño, setTamaño] = useState(80)
@@ -12,6 +13,9 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
   const [listaPacientes, setListaPacientes] = useState<any[]>([])
   const [cargandoPacientes, setCargandoPacientes] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
+  const [historial, setHistorial] = useState<any[]>([])
+  const [mostrandoHistorial, setMostrandoHistorial] = useState(false)
+  const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
   const letras = ['E', 'F', 'P', 'T', 'O', 'Z', 'L', 'D', 'C', 'H']
   const tamaños = [80, 70, 60, 50, 40, 30, 25, 20, 15, 10]
@@ -81,6 +85,32 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     }
     
     setGuardando(false)
+  }
+
+  // Cargar historial
+  const cargarHistorial = async () => {
+    if (!pacienteId) {
+      alert('Primero seleccioná un paciente')
+      return
+    }
+    
+    setCargandoHistorial(true)
+    setMostrandoHistorial(true)
+    
+    const { data, error } = await supabase
+      .from('pruebas')
+      .select('*')
+      .eq('paciente_id', pacienteId)
+      .order('fecha', { ascending: false })
+    
+    if (error) {
+      console.error('Error cargando historial:', error)
+      alert('Error al cargar el historial')
+    } else {
+      setHistorial(data || [])
+      console.log('Historial cargado:', data?.length, 'pruebas')
+    }
+    setCargandoHistorial(false)
   }
 
   const agregarPaciente = (nuevoPaciente: any) => {
@@ -153,7 +183,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     <div style={{ textAlign: 'center', padding: '20px' }}>
       <h1>Test Oftalmológico 👁️</h1>
 
-      {/* Selector de paciente con botón nuevo */}
+      {/* Selector de paciente con botones */}
       <div style={{ 
         marginBottom: '20px', 
         padding: '15px', 
@@ -190,6 +220,21 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
             }}
           >
             ➕ Nuevo
+          </button>
+          
+          <button
+            onClick={cargarHistorial}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#17a2b8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📊 Historial
           </button>
         </div>
         
@@ -258,12 +303,25 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
         </p>
       </div>
 
-      {/* Modal para nuevo paciente */}
+      {/* Modal Nuevo Paciente */}
       {mostrarModal && (
         <NuevoPacienteModal
           consultorioId={consultorioId}
           onPacienteCreado={agregarPaciente}
           onClose={() => setMostrarModal(false)}
+        />
+      )}
+
+      {/* Modal Historial */}
+      {mostrandoHistorial && (
+        <HistorialPruebas
+          historial={historial}
+          pacienteNombre={listaPacientes.find(p => p.id === pacienteId)?.nombre || 'Paciente'}
+          cargando={cargandoHistorial}
+          onClose={() => {
+            setMostrandoHistorial(false)
+            setHistorial([])
+          }}
         />
       )}
     </div>
