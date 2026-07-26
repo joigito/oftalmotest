@@ -1,0 +1,51 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.toggle:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-medium);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle:active {
+  transform: translateY(0);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-blue-light);
+}
+
+.icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.text {
+  font-size: 13px;
+}
+
+/* Responsive - ocultar texto en móviles pequeños */
+@media (max-width: 480px) {
+  .text {
+    display: none;
+  }
+  
+  .toggle {
+    padding: 8px 10px;
+  }
+}

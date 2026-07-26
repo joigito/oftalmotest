@@ -1,13 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabaseClient'
 import { NuevoPacienteModal } from './components/NuevoPacienteModal'
 import { HistorialPruebas } from './components/HistorialPruebas'
+import { toast } from 'sonner'
+import { SNELLEN_ROWS, calculateSimpleAcuity, generateRowLetters } from './hooks/useVisualAcuity'
+import styles from './TestOftalmologico.module.css'
+
+interface LetterResult {
+  rowIndex: number
+  letterIndex: number
+  letter: string
+  correct: boolean
+  eye: 'derecho' | 'izquierdo'
+  time: string
+}
+
+interface TestState {
+  currentRow: number
+  currentLetterIndex: number
+  results: LetterResult[]
+  eye: 'derecho' | 'izquierdo'
+  startRow: number
+}
+
+const INITIAL_TEST_STATE: TestState = {
+  currentRow: 3, // Empezar en 20/20 (logMAR 0.0)
+  currentLetterIndex: 0,
+  results: [],
+  eye: 'derecho',
+  startRow: 3,
+}
 
 export default function TestOftalmologico({ consultorioId }: { consultorioId: string }) {
-  const [tamaño, setTamaño] = useState(80)
-  const [letra, setLetra] = useState('E')
-  const [resultados, setResultados] = useState<any[]>([])
-  const [ojo, setOjo] = useState('derecho')
+  const [testState, setTestState] = useState<TestState>(INITIAL_TEST_STATE)
   const [pacienteId, setPacienteId] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [listaPacientes, setListaPacientes] = useState<any[]>([])
@@ -17,14 +42,13 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
   const [mostrandoHistorial, setMostrandoHistorial] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
-  const letras = ['E', 'F', 'P', 'T', 'O', 'Z', 'L', 'D', 'C', 'H']
-  const tamaños = [80, 70, 60, 50, 40, 30, 25, 20, 15, 10]
+  const currentRow = SNELLEN_ROWS[testState.currentRow]
+  const currentLetter = currentRow?.letters[testState.currentLetterIndex] || '?'
 
   // Cargar pacientes
   useEffect(() => {
     const cargarDatos = async () => {
       setCargandoPacientes(true)
-      
       const { data, error } = await supabase
         .from('pacientes')
         .select('id, nombre, dni')
@@ -37,51 +61,67 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
         setListaPacientes(data)
         setPacienteId(data[0].id)
         console.log('Pacientes cargados:', data.length)
-      } else {
-        console.log('No hay pacientes. Creá uno en Supabase')
       }
       setCargandoPacientes(false)
     }
-    
     cargarDatos()
   }, [consultorioId])
+
+  const rightAcuity = testState.results.some(r => r.eye === 'derecho')
+    ? calculateSimpleAcuity(
+        testState.results.filter(r => r.eye === 'derecho'),
+        testState.startRow
+      )
+    : null
+
+  const leftAcuity = testState.results.some(r => r.eye === 'izquierdo')
+    ? calculateSimpleAcuity(
+        testState.results.filter(r => r.eye === 'izquierdo'),
+        testState.startRow
+      )
+    : null
 
   // Guardar prueba
   const guardarPruebaEnSupabase = async () => {
     if (!pacienteId || !consultorioId) {
-      alert('Falta paciente o consultorio. No se puede guardar.')
+      toast.error('Falta paciente o consultorio. No se puede guardar.')
       return
     }
     
-    if (resultados.length === 0) {
-      alert('No hay resultados para guardar.')
+    if (testState.results.length === 0) {
+      toast.error('No hay resultados para guardar.')
       return
     }
     
     setGuardando(true)
     
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('pruebas')
       .insert({
         consultorio_id: consultorioId,
         paciente_id: pacienteId,
         fecha: new Date().toISOString(),
         resultados: {
-          ojo: ojo,
-          resultados_parciales: resultados,
-          tamanios_usados: tamaños,
-          letras_usadas: letras
+          ojo: testState.eye,
+          resultados_parciales: testState.results,
+          agudeza_derecho: rightAcuity,
+          agudeza_izquierdo: leftAcuity,
+          filas_usadas: SNELLEN_ROWS.map(r => ({
+            logMAR: r.logMAR,
+            snellenFt: r.snellenFt,
+            snellenM: r.snellenM,
+            sizePx: r.sizePx
+          }))
         },
         finalizado: true
       })
     
     if (error) {
       console.error('Error guardando:', error)
-      alert('Error al guardar en Supabase: ' + error.message)
+      toast.error('Error al guardar en Supabase: ' + error.message)
     } else {
-      console.log('Guardado exitoso:', data)
       const pacienteNombre = listaPacientes.find(p => p.id === pacienteId)?.nombre || 'Desconocido'
-      alert(`✅ Prueba guardada correctamente para: ${pacienteNombre}`)
+      toast.success(`Prueba guardada correctamente para: ${pacienteNombre}`)
     }
     
     setGuardando(false)
@@ -90,7 +130,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
   // Cargar historial
   const cargarHistorial = async () => {
     if (!pacienteId) {
-      alert('Primero seleccioná un paciente')
+      toast.error('Primero seleccioná un paciente')
       return
     }
     
@@ -105,7 +145,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     
     if (error) {
       console.error('Error cargando historial:', error)
-      alert('Error al cargar el historial')
+      toast.error('Error al cargar el historial')
     } else {
       setHistorial(data || [])
       console.log('Historial cargado:', data?.length, 'pruebas')
@@ -118,85 +158,90 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     setPacienteId(nuevoPaciente.id)
   }
 
-  const letraCorrecta = () => {
-    const nuevosResultados = [...resultados, { 
-      ojo: ojo, 
-      tamaño: tamaño, 
-      letra: letra, 
-      acerto: true,
-      hora: new Date().toLocaleTimeString()
-    }]
-    setResultados(nuevosResultados)
+  const registrarRespuesta = useCallback((correct: boolean) => {
+    const { currentRow, currentLetterIndex, eye } = testState
     
-    const idxActual = tamaños.indexOf(tamaño)
-    if (idxActual < tamaños.length - 1) {
-      setTamaño(tamaños[idxActual + 1])
+    const newResult: LetterResult = {
+      rowIndex: currentRow,
+      letterIndex: currentLetterIndex,
+      letter: currentLetter,
+      correct,
+      eye,
+      time: new Date().toLocaleTimeString()
     }
-    setLetra(letras[Math.floor(Math.random() * letras.length)])
     
-    if (idxActual === tamaños.length - 1) {
-      setTimeout(() => {
-        guardarPruebaEnSupabase()
-      }, 500)
-    }
-  }
+    setTestState(prev => {
+      const newResults = [...prev.results, newResult]
+      let nextRow = prev.currentRow
+      let nextLetterIndex = prev.currentLetterIndex + 1
+      
+      // Avanzar a siguiente letra
+      if (nextLetterIndex >= 5) {
+        nextLetterIndex = 0
+        nextRow = prev.currentRow + 1
+      }
+      
+      // Si terminó todas las filas, auto-guardar
+      if (nextRow >= SNELLEN_ROWS.length) {
+        setTimeout(() => guardarPruebaEnSupabase(), 500)
+      }
+      
+      return {
+        ...prev,
+        currentRow: nextRow,
+        currentLetterIndex: nextLetterIndex,
+        results: newResults
+      }
+    })
+  }, [testState.currentRow, testState.currentLetterIndex, testState.results, testState.eye])
 
-  const letraIncorrecta = () => {
-    const nuevosResultados = [...resultados, { 
-      ojo: ojo, 
-      tamaño: tamaño, 
-      letra: letra, 
-      acerto: false,
-      hora: new Date().toLocaleTimeString()
-    }]
-    setResultados(nuevosResultados)
-    setLetra(letras[Math.floor(Math.random() * letras.length)])
-  }
-
-  const cambiarOjo = (nuevoOjo: string) => {
-    if (resultados.length > 0) {
+  const cambiarOjo = useCallback((nuevoOjo: 'derecho' | 'izquierdo') => {
+    if (testState.results.length > 0) {
       guardarPruebaEnSupabase()
     }
-    setOjo(nuevoOjo)
-    setResultados([])
-    setTamaño(80)
-    setLetra('E')
-  }
+    // Generar nuevas letras para el nuevo ojo
+    SNELLEN_ROWS.forEach((row) => {
+      row.letters = generateRowLetters()
+    })
+    setTestState(prev => ({
+      ...prev,
+      eye: nuevoOjo,
+      currentRow: prev.startRow,
+      currentLetterIndex: 0,
+      results: prev.results.filter(r => r.eye !== nuevoOjo) // Mantener resultados del otro ojo
+    }))
+  }, [testState.results.length])
 
   // Teclado
   useEffect(() => {
     const manejarTecla = (event: KeyboardEvent) => {
       if (event.key === 'a' || event.key === 'A') {
-        letraCorrecta()
+        registrarRespuesta(true)
       } else if (event.key === 's' || event.key === 'S') {
-        letraIncorrecta()
+        registrarRespuesta(false)
       } else if (event.key === 'f' || event.key === 'F') {
-        cambiarOjo(ojo === 'derecho' ? 'izquierdo' : 'derecho')
+        cambiarOjo(testState.eye === 'derecho' ? 'izquierdo' : 'derecho')
       }
     }
     
     window.addEventListener('keydown', manejarTecla)
     return () => window.removeEventListener('keydown', manejarTecla)
-  }, [letraCorrecta, letraIncorrecta, cambiarOjo, ojo])
+  }, [registrarRespuesta, cambiarOjo, testState.eye])
+
+  const progress = ((testState.currentRow - testState.startRow) / (SNELLEN_ROWS.length - testState.startRow)) * 100
 
   return (
-    <div style={{ textAlign: 'center', padding: '20px' }}>
-      <h1>Test Oftalmológico 👁️</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Test Oftalmológico ETDRS 👁️</h1>
 
-      {/* Selector de paciente con botones */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '15px', 
-        backgroundColor: '#f8f9fa',
-        borderRadius: '8px',
-        border: '1px solid #ddd'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <label style={{ fontWeight: 'bold' }}>👤 Paciente:</label>
+      {/* Selector de paciente */}
+      <div className={styles.patientSelector}>
+        <div className={styles.patientRow}>
+          <label className={styles.patientLabel}>👤 Paciente:</label>
           <select 
             value={pacienteId || ''}
             onChange={(e) => setPacienteId(e.target.value)}
-            style={{ padding: '8px', fontSize: '16px', minWidth: '200px', flex: 1 }}
+            className={styles.patientSelect}
             disabled={cargandoPacientes}
           >
             <option value="">-- Seleccionar paciente --</option>
@@ -207,99 +252,107 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
             ))}
           </select>
           
-          <button
-            onClick={() => setMostrarModal(true)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
+          <button onClick={() => setMostrarModal(true)} className={styles.btnNuevo}>
             ➕ Nuevo
           </button>
-          
-          <button
-            onClick={cargarHistorial}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#17a2b8',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
+          <button onClick={cargarHistorial} className={styles.btnHistorial}>
             📊 Historial
           </button>
         </div>
         
-        {cargandoPacientes && <span>⏳ Cargando...</span>}
+        {cargandoPacientes && <span className={styles.loading}>⏳ Cargando...</span>}
         {!cargandoPacientes && listaPacientes.length === 0 && (
-          <span style={{ color: 'red' }}>⚠️ No hay pacientes. Creá uno.</span>
+          <span className={styles.noPatients}>⚠️ No hay pacientes. Creá uno.</span>
         )}
       </div>
 
-      {guardando && <p style={{ color: 'blue', fontWeight: 'bold' }}>💾 Guardando...</p>}
+      {guardando && <p className={styles.saving}>💾 Guardando...</p>}
 
-      <div>
-        <button onClick={() => cambiarOjo('derecho')} style={estiloBoton(ojo === 'derecho')}>
+      {/* Selector de ojo con agudeza calculada */}
+      <div className={styles.eyeButtons}>
+        <button 
+          onClick={() => cambiarOjo('derecho')} 
+          className={`${styles.eyeBtn} ${testState.eye === 'derecho' ? styles.eyeBtnActive : styles.eyeBtnInactive}`}
+        >
           Ojo Derecho 👁️
+          {rightAcuity && <span className={styles.acuityBadge}>{rightAcuity.snellenFt}</span>}
         </button>
-        <button onClick={() => cambiarOjo('izquierdo')} style={estiloBoton(ojo === 'izquierdo')}>
+        <button 
+          onClick={() => cambiarOjo('izquierdo')} 
+          className={`${styles.eyeBtn} ${testState.eye === 'izquierdo' ? styles.eyeBtnActive : styles.eyeBtnInactive}`}
+        >
           Ojo Izquierdo 👁️
+          {leftAcuity && <span className={styles.acuityBadge}>{leftAcuity.snellenFt}</span>}
         </button>
       </div>
-      
-      <div style={{ marginTop: '40px', marginBottom: '40px' }}>
-        <p style={{ fontSize: `${tamaño}px`, fontWeight: 'bold', letterSpacing: '10px' }}>
-          {letra}
+
+      {/* Progreso del test */}
+      <div className={styles.progressContainer}>
+        <div className={styles.progressBar}>
+          <div 
+            className={styles.progressFill} 
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+        <p className={styles.progressText}>
+          Fila {testState.currentRow - testState.startRow + 1} de {SNELLEN_ROWS.length - testState.startRow} 
+          ({currentRow?.snellenFt || '—'})
         </p>
-        <p>Tamaño: {tamaño}px</p>
       </div>
       
-      <div>
-        <button onClick={letraCorrecta} style={estiloBotonCorrecto}>
+      {/* Letra actual - tamaño según fila ETDRS */}
+      <div className={styles.letterDisplay}>
+        <p className={styles.letter} style={{ fontSize: `${currentRow?.sizePx || 48}px` }}>
+          {currentLetter}
+        </p>
+        <p className={styles.letterSize}>
+          {currentRow?.snellenFt} / {currentRow?.snellenM} 
+          (logMAR: {currentRow?.logMAR.toFixed(2)} | {currentRow?.sizePx}px)
+        </p>
+        <p className={styles.letterHint}>
+          Letra {testState.currentLetterIndex + 1} de 5
+        </p>
+      </div>
+      
+      <div className={styles.actionButtons}>
+        <button onClick={() => registrarRespuesta(true)} className={styles.btnCorrect}>
           ✅ Leyó Bien (A)
         </button>
-        <button onClick={letraIncorrecta} style={estiloBotonError}>
+        <button onClick={() => registrarRespuesta(false)} className={styles.btnError}>
           ❌ Leyó Mal (S)
         </button>
       </div>
       
-      <div style={{ marginTop: '20px' }}>
-        <button 
-          onClick={guardarPruebaEnSupabase} 
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#6c757d',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
+      <div>
+        <button onClick={guardarPruebaEnSupabase} className={styles.btnSave}>
           💾 Guardar Manualmente
         </button>
       </div>
       
-      <div style={{ marginTop: '30px', textAlign: 'left', maxWidth: '600px', margin: '30px auto' }}>
-        <h3>Resultados de esta sesión:</h3>
-        <ul style={{ maxHeight: '300px', overflowY: 'auto' }}>
-          {resultados.map((r, i) => (
-            <li key={i} style={{ margin: '5px 0' }}>
-              {r.hora} - Ojo {r.ojo} - Tamaño {r.tamaño}px - Letra {r.letra} - 
-              {r.acerto ? ' ✅ Correcta' : ' ❌ Incorrecta'}
+      {/* Agudeza actual en vivo */}
+      <div className={styles.currentAcuity}>
+        <h4>Agudeza actual:</h4>
+        <div className={styles.acuityRow}>
+          <span>OD: {rightAcuity ? `${rightAcuity.snellenFt} (${rightAcuity.decimal})` : '—'}</span>
+          <span>OI: {leftAcuity ? `${leftAcuity.snellenFt} (${leftAcuity.decimal})` : '—'}</span>
+        </div>
+      </div>
+
+      {/* Resultados detallados */}
+      <div className={styles.resultsSection}>
+        <h3 className={styles.resultsTitle}>Detalle de respuestas:</h3>
+        <ul className={styles.resultsList}>
+          {testState.results.map((r, i) => (
+            <li key={i} className={`${styles.resultItem} ${r.correct ? styles.correct : styles.incorrect}`}>
+              {r.time} | {r.eye === 'derecho' ? 'OD' : 'OI'} | 
+              Fila {r.rowIndex + 1} ({SNELLEN_ROWS[r.rowIndex]?.snellenFt}) | 
+              Letra {r.letter} | {r.correct ? '✅' : '❌'}
             </li>
           ))}
         </ul>
-        {resultados.length === 0 && <p>Todavía no hay resultados. Hacé clic en los botones.</p>}
-        <p style={{ fontSize: '12px', color: '#666', marginTop: '20px' }}>
-          💡 Atajo de teclado: <strong>A</strong> = Leyó Bien | <strong>S</strong> = Leyó Mal | <strong>F</strong> = Cambiar Ojo
+        {testState.results.length === 0 && <p className={styles.emptyResults}>Todavía no hay resultados. Hacé clic en los botones.</p>}
+        <p className={styles.keyboardHint}>
+          💡 Atajos: <strong>A</strong> = Leyó Bien | <strong>S</strong> = Leyó Mal | <strong>F</strong> = Cambiar Ojo
         </p>
       </div>
 
@@ -326,39 +379,4 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
       )}
     </div>
   )
-}
-
-const estiloBoton = (activo: boolean) => ({
-  padding: '10px 20px',
-  margin: '10px',
-  backgroundColor: activo ? '#007bff' : '#ccc',
-  color: 'white',
-  border: 'none',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  transition: 'all 0.3s'
-})
-
-const estiloBotonCorrecto = {
-  padding: '15px 30px',
-  margin: '10px',
-  backgroundColor: '#28a745',
-  color: 'white',
-  border: 'none',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  fontSize: '16px',
-  transition: 'all 0.3s'
-}
-
-const estiloBotonError = {
-  padding: '15px 30px',
-  margin: '10px',
-  backgroundColor: '#dc3545',
-  color: 'white',
-  border: 'none',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  fontSize: '16px',
-  transition: 'all 0.3s'
 }

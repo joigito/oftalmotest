@@ -1,0 +1,22 @@
+Para levantar el servidor de desarrollo Vite:
+
+cd /root/projects/workspace/oftalmotest
+npm run dev -- --host 0.0.0.0 --port 5173
+
+Para dejarlo corriendo en background (sobrevive a logout):
+setsid npm run dev -- --host 0.0.0.0 --port 5173 > vite.log 2>&1 < /dev/null &
+
+Verificar que está escuchando:
+ss -tlnp | grep 5173
+
+Probar localmente:
+curl http://127.0.0.1:5173
+
+Acceso desde navegador:
+http://68.183.136.131:5173/
+
+Para matar el proceso:
+kill <PID>  (ej: kill 41896)
+
+Logs:
+cat vite.log

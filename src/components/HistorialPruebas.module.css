@@ -1,0 +1,216 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  padding: 20px;
+}
+
+.modal {
+  background-color: var(--bg-card);
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btnPDF {
+  padding: 10px 20px;
+  background-color: var(--accent-red);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.btnPDF:hover {
+  background-color: var(--accent-red-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.btnPDF:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btnClose {
+  padding: 10px 20px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btnClose:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-medium);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 48px 20px;
+  font-size: 15px;
+}
+
+.summary {
+  background-color: var(--accent-blue-light);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  border: 1px solid var(--accent-blue);
+}
+
+.summaryText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.summaryText strong {
+  color: var(--text-primary);
+}
+
+.testList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.testItem {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  background-color: var(--bg-secondary);
+  transition: all var(--transition-fast);
+}
+
+.testItem:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.testHeader {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.testNumber {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.testTime {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.testStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.statCorrect {
+  color: var(--accent-green);
+  font-weight: 500;
+}
+
+.statError {
+  color: var(--accent-red);
+  font-weight: 500;
+}
+
+.statEye {
+  color: var(--text-secondary);
+}
+
+.testDetail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .overlay {
+    padding: 10px;
+  }
+  
+  .modal {
+    padding: 20px;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .btnPDF, .btnClose {
+    flex: 1;
+    justify-content: center;
+  }
+}
