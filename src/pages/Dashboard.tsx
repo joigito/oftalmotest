@@ -53,7 +53,7 @@ export function Dashboard() {
   const { rol } = useMedico()
 
   const visibleModules = modules.filter((mod) =>
-    !mod.disabled && (rol ? mod.roles.includes(rol) : mod.roles.includes('medico'))
+    rol ? mod.roles.includes(rol) : mod.roles.includes('medico')
   )
 
   return (
