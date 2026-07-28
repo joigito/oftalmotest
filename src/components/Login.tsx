@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-interface LoginProps {
-  onLogin: () => void
-}
-
-export function Login({ onLogin }: LoginProps) {
+export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,8 +19,6 @@ export function Login({ onLogin }: LoginProps) {
 
     if (error) {
       setError(error.message)
-    } else {
-      onLogin()
     }
     setCargando(false)
   }

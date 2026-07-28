@@ -1,17 +1,19 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { crearPaciente } from '../hooks/usePacientes'
+import type { Paciente } from '../hooks/usePacientes'
 import styles from './NuevoPacienteModal.module.css'
 
 interface NuevoPacienteModalProps {
-  consultorioId: string
-  onPacienteCreado: (paciente: any) => void
+  medicoId: string
+  onPacienteCreado: (paciente: Paciente) => void
   onClose: () => void
 }
 
-export function NuevoPacienteModal({ consultorioId, onPacienteCreado, onClose }: NuevoPacienteModalProps) {
+export function NuevoPacienteModal({ medicoId, onPacienteCreado, onClose }: NuevoPacienteModalProps) {
   const [nombre, setNombre] = useState('')
   const [dni, setDni] = useState('')
   const [telefono, setTelefono] = useState('')
+  const [fechaNacimiento, setFechaNacimiento] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,55 +26,38 @@ export function NuevoPacienteModal({ consultorioId, onPacienteCreado, onClose }:
       return
     }
 
-    if (dni.trim()) {
-      const { data: existente, error: checkError } = await supabase
-        .from('pacientes')
-        .select('id')
-        .eq('dni', dni.trim())
-        .eq('consultorio_id', consultorioId)
-        .single()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error verificando DNI:', checkError)
-        setError('Error al verificar DNI')
-        return
-      }
-
-      if (existente) {
-        setError('Ya existe un paciente con ese DNI en este consultorio')
-        return
-      }
-    }
-
     setGuardando(true)
 
-    const { data, error } = await supabase
-      .from('pacientes')
-      .insert({
+    try {
+      const paciente = await crearPaciente(medicoId, {
         nombre: nombre.trim(),
-        dni: dni.trim() || null,
-        telefono: telefono.trim() || null,
-        consultorio_id: consultorioId
+        dni: dni.trim() || undefined,
+        telefono: telefono.trim() || undefined,
+        fecha_nacimiento: fechaNacimiento || undefined
       })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creando paciente:', error)
-      setError('Error al crear paciente: ' + error.message)
-    } else {
-      onPacienteCreado(data)
+      
+      onPacienteCreado(paciente)
       setNombre('')
       setDni('')
       setTelefono('')
+      setFechaNacimiento('')
       onClose()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido'
+      const code = typeof err === 'object' && err !== null && 'code' in err ? (err as { code: string }).code : null
+      if (code === '23505') {
+        setError('Ya existe un paciente con ese DNI')
+      } else {
+        setError('Error al crear paciente: ' + message)
+      }
+    } finally {
+      setGuardando(false)
     }
-    setGuardando(false)
   }
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <h2 className={styles.title}>➕ Nuevo Paciente</h2>
         
         <form onSubmit={handleSubmit}>
@@ -97,7 +82,7 @@ export function NuevoPacienteModal({ consultorioId, onPacienteCreado, onClose }:
               className={styles.input}
               placeholder="Opcional - se validará unicidad"
             />
-            {error && <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>{error}</p>}
+            {error && <p className={styles.errorText}>{error}</p>}
           </div>
           
           <div className={styles.formGroup}>
@@ -108,6 +93,16 @@ export function NuevoPacienteModal({ consultorioId, onPacienteCreado, onClose }:
               onChange={(e) => setTelefono(e.target.value)}
               className={styles.input}
               placeholder="Opcional"
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Fecha de nacimiento</label>
+            <input
+              type="date"
+              value={fechaNacimiento}
+              onChange={(e) => setFechaNacimiento(e.target.value)}
+              className={styles.input}
             />
           </div>
           

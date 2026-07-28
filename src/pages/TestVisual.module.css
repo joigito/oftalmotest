@@ -1,0 +1,45 @@
+.container {
+  width: 100%;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--accent-blue-hover);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.errorBox {
+  padding: 24px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.errorBox h2 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.errorBox p {
+  margin: 0;
+  font-size: 14px;
+}

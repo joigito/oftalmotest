@@ -4,6 +4,8 @@ import { NuevoPacienteModal } from './components/NuevoPacienteModal'
 import { HistorialPruebas } from './components/HistorialPruebas'
 import { toast } from 'sonner'
 import { SNELLEN_ROWS, calculateSimpleAcuity, generateRowLetters } from './hooks/useVisualAcuity'
+import { cargarPacientes, crearPaciente, guardarTest } from './hooks/usePacientes'
+import type { Paciente } from './hooks/usePacientes'
 import styles from './TestOftalmologico.module.css'
 
 interface LetterResult {
@@ -24,48 +26,44 @@ interface TestState {
 }
 
 const INITIAL_TEST_STATE: TestState = {
-  currentRow: 3, // Empezar en 20/20 (logMAR 0.0)
+  currentRow: 3,
   currentLetterIndex: 0,
   results: [],
   eye: 'derecho',
   startRow: 3,
 }
 
-export default function TestOftalmologico({ consultorioId }: { consultorioId: string }) {
+export default function TestOftalmologico({ medicoId }: { medicoId: string }) {
   const [testState, setTestState] = useState<TestState>(INITIAL_TEST_STATE)
   const [pacienteId, setPacienteId] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
-  const [listaPacientes, setListaPacientes] = useState<any[]>([])
+  const [listaPacientes, setListaPacientes] = useState<Paciente[]>([])
   const [cargandoPacientes, setCargandoPacientes] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
-  const [historial, setHistorial] = useState<any[]>([])
+  const [historial, setHistorial] = useState<Record<string, unknown>[]>([])
   const [mostrandoHistorial, setMostrandoHistorial] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
   const currentRow = SNELLEN_ROWS[testState.currentRow]
   const currentLetter = currentRow?.letters[testState.currentLetterIndex] || '?'
 
-  // Cargar pacientes
+  // Cargar pacientes vinculados al médico
   useEffect(() => {
     const cargarDatos = async () => {
       setCargandoPacientes(true)
-      const { data, error } = await supabase
-        .from('pacientes')
-        .select('id, nombre, dni')
-        .eq('consultorio_id', consultorioId)
-        .order('nombre')
-      
-      if (error) {
+      try {
+        const pacientes = await cargarPacientes(medicoId)
+        if (pacientes.length > 0) {
+          setListaPacientes(pacientes)
+          setPacienteId(pacientes[0].id)
+        }
+      } catch (error) {
         console.error('Error cargando pacientes:', error)
-      } else if (data && data.length > 0) {
-        setListaPacientes(data)
-        setPacienteId(data[0].id)
-        console.log('Pacientes cargados:', data.length)
       }
       setCargandoPacientes(false)
     }
     cargarDatos()
-  }, [consultorioId])
+  }, [medicoId])
 
   const rightAcuity = testState.results.some(r => r.eye === 'derecho')
     ? calculateSimpleAcuity(
@@ -83,8 +81,8 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
 
   // Guardar prueba
   const guardarPruebaEnSupabase = async () => {
-    if (!pacienteId || !consultorioId) {
-      toast.error('Falta paciente o consultorio. No se puede guardar.')
+    if (!pacienteId) {
+      toast.error('Falta paciente. No se puede guardar.')
       return
     }
     
@@ -95,33 +93,25 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     
     setGuardando(true)
     
-    const { error } = await supabase
-      .from('pruebas')
-      .insert({
-        consultorio_id: consultorioId,
-        paciente_id: pacienteId,
-        fecha: new Date().toISOString(),
-        resultados: {
-          ojo: testState.eye,
-          resultados_parciales: testState.results,
-          agudeza_derecho: rightAcuity,
-          agudeza_izquierdo: leftAcuity,
-          filas_usadas: SNELLEN_ROWS.map(r => ({
-            logMAR: r.logMAR,
-            snellenFt: r.snellenFt,
-            snellenM: r.snellenM,
-            sizePx: r.sizePx
-          }))
-        },
-        finalizado: true
+    try {
+      await guardarTest(medicoId, pacienteId, {
+        ojo: testState.eye,
+        resultados_parciales: testState.results,
+        agudeza_derecho: rightAcuity,
+        agudeza_izquierdo: leftAcuity,
+        filas_usadas: SNELLEN_ROWS.map(r => ({
+          logMAR: r.logMAR,
+          snellenFt: r.snellenFt,
+          snellenM: r.snellenM,
+          sizePx: r.sizePx
+        }))
       })
-    
-    if (error) {
-      console.error('Error guardando:', error)
-      toast.error('Error al guardar en Supabase: ' + error.message)
-    } else {
+      
       const pacienteNombre = listaPacientes.find(p => p.id === pacienteId)?.nombre || 'Desconocido'
       toast.success(`Prueba guardada correctamente para: ${pacienteNombre}`)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error al guardar en Supabase: ' + message)
     }
     
     setGuardando(false)
@@ -137,25 +127,32 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
     setCargandoHistorial(true)
     setMostrandoHistorial(true)
     
-    const { data, error } = await supabase
-      .from('pruebas')
-      .select('*')
-      .eq('paciente_id', pacienteId)
-      .order('fecha', { ascending: false })
-    
-    if (error) {
-      console.error('Error cargando historial:', error)
-      toast.error('Error al cargar el historial')
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('pruebas')
+        .select('*')
+        .eq('paciente_id', pacienteId)
+        .order('fecha', { ascending: false })
+      
+      if (error) throw error
+      
       setHistorial(data || [])
-      console.log('Historial cargado:', data?.length, 'pruebas')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error al cargar el historial: ' + message)
     }
     setCargandoHistorial(false)
   }
 
-  const agregarPaciente = (nuevoPaciente: any) => {
-    setListaPacientes([...listaPacientes, nuevoPaciente])
-    setPacienteId(nuevoPaciente.id)
+  const agregarPaciente = async (nuevoPaciente: { nombre: string; dni?: string; telefono?: string; fecha_nacimiento?: string }) => {
+    try {
+      const paciente = await crearPaciente(medicoId, nuevoPaciente)
+      setListaPacientes(prev => [...prev, paciente])
+      setPacienteId(paciente.id)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error al crear paciente: ' + message)
+    }
   }
 
   const registrarRespuesta = useCallback((correct: boolean) => {
@@ -175,13 +172,11 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
       let nextRow = prev.currentRow
       let nextLetterIndex = prev.currentLetterIndex + 1
       
-      // Avanzar a siguiente letra
       if (nextLetterIndex >= 5) {
         nextLetterIndex = 0
         nextRow = prev.currentRow + 1
       }
       
-      // Si terminó todas las filas, auto-guardar
       if (nextRow >= SNELLEN_ROWS.length) {
         setTimeout(() => guardarPruebaEnSupabase(), 500)
       }
@@ -208,7 +203,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
       eye: nuevoOjo,
       currentRow: prev.startRow,
       currentLetterIndex: 0,
-      results: prev.results.filter(r => r.eye !== nuevoOjo) // Mantener resultados del otro ojo
+      results: prev.results.filter(r => r.eye !== nuevoOjo)
     }))
   }, [testState.results.length])
 
@@ -255,6 +250,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
           <button onClick={() => setMostrarModal(true)} className={styles.btnNuevo}>
             ➕ Nuevo
           </button>
+          
           <button onClick={cargarHistorial} className={styles.btnHistorial}>
             📊 Historial
           </button>
@@ -262,7 +258,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
         
         {cargandoPacientes && <span className={styles.loading}>⏳ Cargando...</span>}
         {!cargandoPacientes && listaPacientes.length === 0 && (
-          <span className={styles.noPatients}>⚠️ No hay pacientes. Creá uno.</span>
+          <span className={styles.noPatients}>⚠️ No hay pacientes vinculados. Creá uno.</span>
         )}
       </div>
 
@@ -359,7 +355,7 @@ export default function TestOftalmologico({ consultorioId }: { consultorioId: st
       {/* Modal Nuevo Paciente */}
       {mostrarModal && (
         <NuevoPacienteModal
-          consultorioId={consultorioId}
+          medicoId={medicoId}
           onPacienteCreado={agregarPaciente}
           onClose={() => setMostrarModal(false)}
         />

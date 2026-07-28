@@ -1,0 +1,134 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--accent-blue-hover);
+}
+
+.title {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.form {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-blue-light);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--accent-blue);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--accent-blue-hover);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.listTitle {
+  margin: 32px 0 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.loading,
+.empty {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.medName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.medEmail {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .listItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
+import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
-import TestOftalmologico from './TestOftalmologico'
+import Dashboard from './pages/Dashboard'
+import TestVisual from './pages/TestVisual'
+import CrearMedicos from './pages/CrearMedicos'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from './context/ThemeContext'
 import { ThemeToggle } from './components/ThemeToggle'
 import styles from './App.module.css'
 
-function AppContent() {
-  const [session, setSession] = useState<any>(null)
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null)
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -33,7 +37,7 @@ function AppContent() {
   }
 
   if (!session) {
-    return <Login onLogin={() => {}} />
+    return <Login />
   }
 
   return (
@@ -44,16 +48,13 @@ function AppContent() {
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{session.user.email}</span>
           <ThemeToggle />
-          <button
-            onClick={handleLogout}
-            className={styles.logoutBtn}
-          >
+          <button onClick={handleLogout} className={styles.logoutBtn}>
             Cerrar Sesión
           </button>
         </div>
       </header>
       <main className={styles.main}>
-        <TestOftalmologico consultorioId="6019ee21-1ce9-4030-b776-b93c67ff358a" />
+        {children}
       </main>
     </div>
   )
@@ -62,7 +63,16 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <BrowserRouter>
+        <AuthGuard>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/test" element={<TestVisual />} />
+            <Route path="/medicos" element={<CrearMedicos />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthGuard>
+      </BrowserRouter>
     </ThemeProvider>
   )
 }
