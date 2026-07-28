@@ -15,13 +15,18 @@ export function Login() {
     setCargando(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message || JSON.stringify(error))
+      if (error) {
+        const errorMsg = error.message || error.error_description || JSON.stringify(error)
+        setError(errorMsg)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error de conexión')
     }
     setCargando(false)
   }
