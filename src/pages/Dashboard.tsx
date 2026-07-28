@@ -57,7 +57,7 @@ export function Dashboard() {
   const { rol } = useMedico()
 
   const visibleModules = modules.filter((mod) =>
-    rol ? mod.roles.includes(rol) : mod.roles.includes('medico')
+    !mod.disabled && (rol ? mod.roles.includes(rol) : mod.roles.includes('medico'))
   )
 
   return (
@@ -66,22 +66,13 @@ export function Dashboard() {
       <p className={styles.subtitle}>Seleccioná una opción para comenzar</p>
 
       <div className={styles.grid}>
-        {visibleModules.map((mod) =>
-          mod.disabled ? (
-            <div key={mod.title} className={`${styles.card} ${styles.disabled}`}>
-              <span className={styles.icon}>{mod.icon}</span>
-              <h2 className={styles.cardTitle}>{mod.title}</h2>
-              <p className={styles.cardDescription}>{mod.description}</p>
-              <span className={styles.comingSoon}>Próximamente</span>
-            </div>
-          ) : (
-            <Link key={mod.title} to={mod.path} className={styles.card}>
-              <span className={styles.icon}>{mod.icon}</span>
-              <h2 className={styles.cardTitle}>{mod.title}</h2>
-              <p className={styles.cardDescription}>{mod.description}</p>
-            </Link>
-          )
-        )}
+        {visibleModules.map((mod) => (
+          <Link key={mod.title} to={mod.path} className={styles.card}>
+            <span className={styles.icon}>{mod.icon}</span>
+            <h2 className={styles.cardTitle}>{mod.title}</h2>
+            <p className={styles.cardDescription}>{mod.description}</p>
+          </Link>
+        ))}
       </div>
     </div>
   )
