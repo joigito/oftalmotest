@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
+export type Rol = 'admin' | 'medico' | 'secretario'
+
 export function useMedico() {
   const [medicoId, setMedicoId] = useState<string | null>(null)
+  const [rol, setRol] = useState<Rol | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,7 +24,7 @@ export function useMedico() {
 
       const { data, error } = await supabase
         .from('medicos')
-        .select('id')
+        .select('id, rol')
         .eq('auth_user_id', user.id)
         .single()
 
@@ -33,6 +36,7 @@ export function useMedico() {
         }
       } else if (data) {
         setMedicoId(data.id)
+        setRol((data.rol as Rol) || 'medico')
       } else {
         setError('Médico no encontrado')
       }
@@ -42,5 +46,5 @@ export function useMedico() {
     cargarMedico()
   }, [])
 
-  return { medicoId, cargando, error }
+  return { medicoId, rol, cargando, error }
 }

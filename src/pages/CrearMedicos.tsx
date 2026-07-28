@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useMedico } from '../hooks/useMedico'
 import { toast } from 'sonner'
 import styles from './CrearMedicos.module.css'
 
@@ -10,7 +11,8 @@ interface Medico {
   email: string
 }
 
-export default function CrearMedicos() {
+export function CrearMedicos() {
+  const { rol, cargando: cargandoRol } = useMedico()
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -61,6 +63,14 @@ export default function CrearMedicos() {
     }
 
     setGuardando(false)
+  }
+
+  if (cargandoRol) {
+    return <div className={styles.loading}>Cargando...</div>
+  }
+
+  if (rol !== 'admin') {
+    return <Navigate to="/" replace />
   }
 
   return (

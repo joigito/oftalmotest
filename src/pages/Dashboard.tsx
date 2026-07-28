@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useMedico } from '../hooks/useMedico'
+import type { Rol } from '../hooks/useMedico'
 import styles from './Dashboard.module.css'
 
 interface ModuleItem {
@@ -6,6 +8,7 @@ interface ModuleItem {
   description: string
   icon: string
   path: string
+  roles: Rol[]
   disabled?: boolean
 }
 
@@ -15,18 +18,29 @@ const modules: ModuleItem[] = [
     description: 'Realizar test oftalmológico ETDRS a un paciente',
     icon: '👁️',
     path: '/test',
+    roles: ['admin', 'medico'],
   },
   {
     title: 'Crear Médicos',
     description: 'Registrar nuevos médicos en el sistema',
     icon: '👨‍⚕️',
     path: '/medicos',
+    roles: ['admin'],
   },
   {
     title: 'Pacientes',
     description: 'Gestionar historiales y datos de pacientes',
     icon: '🧑‍🤝‍🧑',
     path: '',
+    roles: ['admin', 'medico'],
+    disabled: true,
+  },
+  {
+    title: 'Turnos',
+    description: 'Gestionar turnos de atención',
+    icon: '📅',
+    path: '',
+    roles: ['admin', 'medico', 'secretario'],
     disabled: true,
   },
   {
@@ -34,18 +48,25 @@ const modules: ModuleItem[] = [
     description: 'Estadísticas y reportes de pruebas realizadas',
     icon: '📊',
     path: '',
+    roles: ['admin', 'medico'],
     disabled: true,
   },
 ]
 
-export default function Dashboard() {
+export function Dashboard() {
+  const { rol } = useMedico()
+
+  const visibleModules = modules.filter((mod) =>
+    rol ? mod.roles.includes(rol) : mod.roles.includes('medico')
+  )
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Panel Principal</h1>
       <p className={styles.subtitle}>Seleccioná una opción para comenzar</p>
 
       <div className={styles.grid}>
-        {modules.map((mod) =>
+        {visibleModules.map((mod) =>
           mod.disabled ? (
             <div key={mod.title} className={`${styles.card} ${styles.disabled}`}>
               <span className={styles.icon}>{mod.icon}</span>

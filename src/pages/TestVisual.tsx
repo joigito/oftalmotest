@@ -3,7 +3,7 @@ import TestOftalmologico from '../TestOftalmologico'
 import { useMedico } from '../hooks/useMedico'
 import styles from './TestVisual.module.css'
 
-export default function TestVisual() {
+export function TestVisual() {
   const { medicoId, cargando, error } = useMedico()
 
   if (cargando) {
