@@ -17,6 +17,15 @@ interface LetterResult {
   time: string
 }
 
+interface Prueba {
+  id: string
+  medico_id: string
+  paciente_id: string
+  fecha: string
+  resultados: Record<string, unknown>
+  finalizado: boolean
+}
+
 interface TestState {
   currentRow: number
   currentLetterIndex: number
@@ -40,7 +49,7 @@ export default function TestOftalmologico({ medicoId }: { medicoId: string }) {
   const [listaPacientes, setListaPacientes] = useState<Paciente[]>([])
   const [cargandoPacientes, setCargandoPacientes] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
-  const [historial, setHistorial] = useState<Record<string, unknown>[]>([])
+  const [historial, setHistorial] = useState<Prueba[]>([])
   const [mostrandoHistorial, setMostrandoHistorial] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
@@ -144,17 +153,12 @@ export default function TestOftalmologico({ medicoId }: { medicoId: string }) {
     setCargandoHistorial(false)
   }
 
-  const agregarPaciente = async (nuevoPaciente: { nombre: string; dni?: string; telefono?: string; fecha_nacimiento?: string }) => {
-    try {
-      const paciente = await crearPaciente(medicoId, nuevoPaciente)
-      setListaPacientes(prev => [...prev, paciente])
-      setPacienteId(paciente.id)
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error desconocido'
-      toast.error('Error al crear paciente: ' + message)
-    }
+  const agregarPaciente = async (paciente: Paciente) => {
+    setListaPacientes(prev => [...prev, paciente])
+    setPacienteId(paciente.id)
   }
 
+  // Justified: stabilizes reference for keyboard useEffect dependency array
   const registrarRespuesta = useCallback((correct: boolean) => {
     const { currentRow, currentLetterIndex, eye } = testState
     
@@ -190,6 +194,7 @@ export default function TestOftalmologico({ medicoId }: { medicoId: string }) {
     })
   }, [testState.currentRow, testState.currentLetterIndex, testState.results, testState.eye])
 
+  // Justified: stabilizes reference for keyboard useEffect dependency array
   const cambiarOjo = useCallback((nuevoOjo: 'derecho' | 'izquierdo') => {
     if (testState.results.length > 0) {
       guardarPruebaEnSupabase()

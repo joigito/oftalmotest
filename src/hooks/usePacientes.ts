@@ -42,7 +42,7 @@ export const cargarPacientes = async (medicoId: string): Promise<Paciente[]> => 
   }
 
   // Mapear a formato plano
-  return ((data || []) as MedicoPacienteRow[]).map((item) => ({
+  return ((data || []) as unknown as MedicoPacienteRow[]).map((item) => ({
     id: item.pacientes.id,
     nombre: item.pacientes.nombre,
     dni: item.pacientes.dni,
@@ -68,27 +68,15 @@ export const crearPaciente = async (
 
     if (existente) {
       pacienteId = existente.id
-    } else {
-      const { data: nuevo, error } = await supabase
-        .from('pacientes')
-        .insert({
-          nombre: paciente.nombre,
-          dni: paciente.dni || null,
-          telefono: paciente.telefono || null,
-          fecha_nacimiento: paciente.fecha_nacimiento || null
-        })
-        .select('id')
-        .single()
-
-      if (error) throw error
-      pacienteId = nuevo.id
     }
-  } else {
+  }
+
+  if (!pacienteId!) {
     const { data: nuevo, error } = await supabase
       .from('pacientes')
       .insert({
         nombre: paciente.nombre,
-        dni: null,
+        dni: paciente.dni ?? null,
         telefono: paciente.telefono || null,
         fecha_nacimiento: paciente.fecha_nacimiento || null
       })
