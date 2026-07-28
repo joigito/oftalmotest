@@ -114,10 +114,22 @@ export const crearPaciente = async (
 // Guardar test
 export interface TestResultados {
   ojo: 'derecho' | 'izquierdo'
-  resultados_parciales: Record<string, unknown>[]
+  resultados_parciales: Array<{
+    rowIndex: number
+    letterIndex: number
+    letter: string
+    correct: boolean
+    eye: 'derecho' | 'izquierdo'
+    time: string
+  }>
   agudeza_derecho: { snellenFt: string; decimal: number } | null
   agudeza_izquierdo: { snellenFt: string; decimal: number } | null
-  filas_usadas: Record<string, unknown>[]
+  filas_usadas: Array<{
+    logMAR: number
+    snellenFt: string
+    snellenM: string
+    sizePx: number
+  }>
 }
 
 export const guardarTest = async (
