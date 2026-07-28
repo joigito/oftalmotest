@@ -22,7 +22,7 @@ export function Login() {
       })
 
       if (error) {
-        const errorMsg = error.message || error.error_description || JSON.stringify(error)
+        const errorMsg = error.message || JSON.stringify(error)
         setError(errorMsg)
       }
     } catch (err) {
