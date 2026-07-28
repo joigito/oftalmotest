@@ -4,7 +4,7 @@ import { NuevoPacienteModal } from './components/NuevoPacienteModal'
 import { HistorialPruebas } from './components/HistorialPruebas'
 import { toast } from 'sonner'
 import { SNELLEN_ROWS, calculateSimpleAcuity, generateRowLetters } from './hooks/useVisualAcuity'
-import { cargarPacientes, crearPaciente, guardarTest } from './hooks/usePacientes'
+import { cargarPacientes, guardarTest } from './hooks/usePacientes'
 import type { Paciente } from './hooks/usePacientes'
 import styles from './TestOftalmologico.module.css'
 
@@ -22,7 +22,12 @@ interface Prueba {
   medico_id: string
   paciente_id: string
   fecha: string
-  resultados: Record<string, unknown>
+  resultados: {
+    ojo: string
+    resultados_parciales: LetterResult[]
+    agudeza_derecho: { snellenFt: string; decimal: number } | null
+    agudeza_izquierdo: { snellenFt: string; decimal: number } | null
+  }
   finalizado: boolean
 }
 
