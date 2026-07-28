@@ -9,10 +9,23 @@ interface ModuleItem {
   icon: string
   path: string
   roles: Rol[]
-  disabled?: boolean
 }
 
 const modules: ModuleItem[] = [
+  {
+    title: 'Turnos',
+    description: 'Gestionar turnos de atención',
+    icon: '📅',
+    path: '/turnos',
+    roles: ['admin', 'medico', 'secretario'],
+  },
+  {
+    title: 'Pacientes',
+    description: 'Gestionar historiales y datos de pacientes',
+    icon: '🧑‍🤝‍🧑',
+    path: '/pacientes',
+    roles: ['admin', 'medico'],
+  },
   {
     title: 'Test Visual',
     description: 'Realizar test oftalmológico ETDRS a un paciente',
@@ -21,35 +34,18 @@ const modules: ModuleItem[] = [
     roles: ['admin', 'medico'],
   },
   {
+    title: 'Reportes',
+    description: 'Estadísticas y reportes de pruebas realizadas',
+    icon: '📊',
+    path: '/reportes',
+    roles: ['admin', 'medico'],
+  },
+  {
     title: 'Crear Médicos',
     description: 'Registrar nuevos médicos en el sistema',
     icon: '👨‍⚕️',
     path: '/medicos',
     roles: ['admin'],
-  },
-  {
-    title: 'Pacientes',
-    description: 'Gestionar historiales y datos de pacientes',
-    icon: '🧑‍🤝‍🧑',
-    path: '',
-    roles: ['admin', 'medico'],
-    disabled: true,
-  },
-  {
-    title: 'Turnos',
-    description: 'Gestionar turnos de atención',
-    icon: '📅',
-    path: '',
-    roles: ['admin', 'medico', 'secretario'],
-    disabled: true,
-  },
-  {
-    title: 'Reportes',
-    description: 'Estadísticas y reportes de pruebas realizadas',
-    icon: '📊',
-    path: '',
-    roles: ['admin', 'medico'],
-    disabled: true,
   },
 ]
 
