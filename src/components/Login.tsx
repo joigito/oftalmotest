@@ -21,7 +21,7 @@ export function Login() {
     })
 
     if (error) {
-      setError(error.message)
+      setError(error.message || JSON.stringify(error))
     }
     setCargando(false)
   }
