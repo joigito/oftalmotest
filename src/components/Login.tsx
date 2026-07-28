@@ -1,5 +1,8 @@
+"use client"
+
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import styles from './Login.module.css'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -24,66 +27,39 @@ export function Login() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      backgroundColor: '#f0f2f5'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <h1 className={styles.title}>
           👁️ Sistema Oftalmológico
         </h1>
         
         <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Email</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #ddd'
-              }}
+              className={styles.input}
+              placeholder="tu@email.com"
               required
             />
           </div>
           
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #ddd'
-              }}
+              className={styles.input}
+              placeholder="••••••••"
               required
             />
           </div>
           
           {error && (
-            <div style={{
-              color: 'red',
-              marginBottom: '15px',
-              padding: '10px',
-              backgroundColor: '#ffebee',
-              borderRadius: '4px'
-            }}>
+            <div className={styles.errorBox}>
               {error}
             </div>
           )}
@@ -91,16 +67,7 @@ export function Login() {
           <button
             type="submit"
             disabled={cargando}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
+            className={styles.submitBtn}
           >
             {cargando ? 'Ingresando...' : 'Ingresar'}
           </button>
