@@ -15,6 +15,7 @@ export function CrearMedicos() {
   const { rol, cargando: cargandoRol } = useMedico()
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [medicos, setMedicos] = useState<Medico[]>([])
   const [cargando, setCargando] = useState(true)
@@ -41,16 +42,22 @@ export function CrearMedicos() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!nombre.trim() || !email.trim()) {
-      toast.error('Completá nombre y email')
+    if (!nombre.trim() || !email.trim() || !password.trim()) {
+      toast.error('Completá nombre, email y contraseña')
+      return
+    }
+
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres')
       return
     }
 
     setGuardando(true)
 
-    const { error } = await supabase.from('medicos').insert({
-      nombre: nombre.trim(),
-      email: email.trim(),
+    const { data, error } = await supabase.rpc('crear_medico', {
+      p_nombre: nombre.trim(),
+      p_email: email.trim(),
+      p_password: password.trim(),
     })
 
     if (error) {
@@ -59,6 +66,7 @@ export function CrearMedicos() {
       toast.success('Médico creado correctamente')
       setNombre('')
       setEmail('')
+      setPassword('')
       cargarMedicos()
     }
 
@@ -102,6 +110,20 @@ export function CrearMedicos() {
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
             placeholder="juan@ejemplo.com"
+            required
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="password" className={styles.label}>Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={styles.input}
+            placeholder="Mínimo 6 caracteres"
+            minLength={6}
             required
           />
         </div>
