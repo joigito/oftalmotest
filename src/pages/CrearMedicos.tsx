@@ -54,7 +54,7 @@ export function CrearMedicos() {
 
     setGuardando(true)
 
-    const { data, error } = await supabase.rpc('crear_medico', {
+    const { error } = await supabase.rpc('crear_medico', {
       p_nombre: nombre.trim(),
       p_email: email.trim(),
       p_password: password.trim(),
