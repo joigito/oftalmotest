@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard'
 import { TestVisual } from './pages/TestVisual'
 import { CrearMedicos } from './pages/CrearMedicos'
 import { Pacientes } from './pages/Pacientes'
+import { Turnos } from './pages/Turnos'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from './context/ThemeContext'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -79,6 +80,7 @@ export function App() {
             <Route path="/test" element={<TestVisual />} />
             <Route path="/medicos" element={<CrearMedicos />} />
             <Route path="/pacientes" element={<Pacientes />} />
+            <Route path="/turnos" element={<Turnos />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthGuard>
