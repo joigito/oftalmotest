@@ -7,6 +7,7 @@ import { CambiarContrasena } from './components/CambiarContrasena'
 import { Dashboard } from './pages/Dashboard'
 import { TestVisual } from './pages/TestVisual'
 import { CrearMedicos } from './pages/CrearMedicos'
+import { Pacientes } from './pages/Pacientes'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from './context/ThemeContext'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -77,6 +78,7 @@ export function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/test" element={<TestVisual />} />
             <Route path="/medicos" element={<CrearMedicos />} />
+            <Route path="/pacientes" element={<Pacientes />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthGuard>

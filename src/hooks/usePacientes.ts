@@ -111,6 +111,37 @@ export const crearPaciente = async (
   return data
 }
 
+// Actualizar paciente
+export const actualizarPaciente = async (
+  _medicoId: string,
+  pacienteId: string,
+  data: { nombre?: string; dni?: string; telefono?: string; fecha_nacimiento?: string }
+): Promise<Paciente> => {
+  const { data: updated, error } = await supabase
+    .from('pacientes')
+    .update(data)
+    .eq('id', pacienteId)
+    .select('id, nombre, dni, telefono, fecha_nacimiento')
+    .single()
+
+  if (error) throw error
+  return updated
+}
+
+// Eliminar (desactivar) vinculación de paciente
+export const eliminarPaciente = async (
+  medicoId: string,
+  pacienteId: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('medico_paciente')
+    .update({ activo: false })
+    .eq('medico_id', medicoId)
+    .eq('paciente_id', pacienteId)
+
+  if (error) throw error
+}
+
 // Guardar test
 export interface TestResultados {
   ojo: 'derecho' | 'izquierdo'
