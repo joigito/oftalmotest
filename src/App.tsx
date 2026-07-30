@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import type { Session } from '@supabase/supabase-js'
 import { Login } from './components/Login'
@@ -73,7 +73,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <HashRouter>
         <AuthGuard>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -84,7 +84,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthGuard>
-      </BrowserRouter>
+      </HashRouter>
     </ThemeProvider>
   )
 }
