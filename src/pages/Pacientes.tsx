@@ -128,7 +128,7 @@ export function Pacientes() {
     return <div className={styles.loading}>Cargando...</div>
   }
 
-  if (rol !== 'admin' && rol !== 'medico') {
+  if (rol !== 'admin' && rol !== 'medico' && rol !== 'secretario') {
     return <Navigate to="/" replace />
   }
 

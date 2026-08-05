@@ -24,7 +24,7 @@ const modules: ModuleItem[] = [
     description: 'Gestionar historiales y datos de pacientes',
     icon: '🧑‍🤝‍🧑',
     path: '/pacientes',
-    roles: ['admin', 'medico'],
+    roles: ['admin', 'medico', 'secretario'],
   },
   {
     title: 'Test Visual',
